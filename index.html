@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FinancePulse AI - Personal Expense Tracker</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <i data-lucide="wallet" class="logo-icon"></i>
+        </div>
+        <div>
+          <h1>FinancePulse</h1>
+          <span class="sub-brand">AI Personal Planner</span>
+        </div>
+      </div>
+      
+      <!-- Date Switcher -->
+      <div class="month-selector">
+        <button id="prev-month-btn" class="nav-arrow-btn">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <span id="current-month-display">June 2026</span>
+        <button id="next-month-btn" class="nav-arrow-btn">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Content Area -->
+    <main class="app-main-content">
+      
+      <!-- TAB 1: DASHBOARD -->
+      <section id="tab-dashboard" class="mobile-tab-panel active">
+        <!-- Balance Card -->
+        <div class="balance-card">
+          <div class="balance-meta">
+            <span class="balance-title">Net Available Balance</span>
+            <span class="balance-percent" id="savings-rate-badge">Savings Rate: 0%</span>
+          </div>
+          <div class="balance-amount" id="net-balance-val">₹0.00</div>
+          <div class="balance-grid">
+            <div class="balance-flow income">
+              <i data-lucide="arrow-down-left" class="flow-icon"></i>
+              <div>
+                <span class="flow-title">Total Income</span>
+                <span class="flow-amount" id="total-income-val">₹0.00</span>
+              </div>
+            </div>
+            <div class="balance-flow expense">
+              <i data-lucide="arrow-up-right" class="flow-icon"></i>
+              <div>
+                <span class="flow-title">Total Spent</span>
+                <span class="flow-amount" id="total-expense-val">₹0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Voice/Text Log Card -->
+        <div class="card ai-logger-card">
+          <div class="card-header">
+            <h3><i data-lucide="sparkles" class="card-accent-icon"></i> AI Smart Logger</h3>
+            <span class="badge badge-teal">Natural NLP</span>
+          </div>
+          <p class="card-desc">Type what you spent or earned to auto-log instantly:</p>
+          <div class="ai-input-container">
+            <input type="text" id="ai-nlp-input" placeholder="e.g. Spent 350 for dinner today..." aria-label="AI Logger Input">
+            <button id="ai-nlp-submit" class="ai-submit-btn" title="Submit NLP transaction">
+              <i data-lucide="send"></i>
+            </button>
+          </div>
+          <div class="ai-prompts-suggestions">
+            <span class="prompt-chip" onclick="fillPrompt('Salary 65000 credited today')">"Salary 65000 credited"</span>
+            <span class="prompt-chip" onclick="fillPrompt('Spent 1200 on fuel yesterday')">"Spent 1200 on fuel"</span>
+            <span class="prompt-chip" onclick="fillPrompt('Paid 850 for broadband internet')">"Paid 850 for broadband"</span>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="recent-transactions-section">
+          <div class="section-header">
+            <h3>Recent Activity</h3>
+            <button class="view-all-link" id="export-data-btn" title="Backup your financial logs to JSON">
+              <i data-lucide="download-cloud" style="width: 14px; height: 14px; vertical-align: middle;"></i> Backup JSON
+            </button>
+            <label class="view-all-link" style="cursor: pointer;" title="Restore backup from file">
+              <input type="file" id="import-data-file" style="display: none;">
+              <i data-lucide="upload-cloud" style="width: 14px; height: 14px; vertical-align: middle;"></i> Restore
+            </label>
+            <button class="view-all-link" id="clear-data-btn" onclick="clearAllData()" style="color: var(--state-danger);" title="Clear all data and start fresh">
+              <i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle;"></i> Clear All
+            </button>
+          </div>
+          
+          <div class="transactions-list" id="dashboard-transactions-list">
+            <!-- Dynamic entries loaded here -->
+            <div class="empty-state">
+              <i data-lucide="receipt"></i>
+              <p>No transactions registered for this month.</p>
+              <span>Tap the '+' button to log your first record!</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ANALYTICS -->
+      <section id="tab-analytics" class="mobile-tab-panel">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3>Expense Breakdown</h3>
+            <i data-lucide="pie-chart" class="text-teal"></i>
+          </div>
+          <div class="chart-container">
+            <canvas id="expense-pie-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3>Budget vs Spending</h3>
+            <i data-lucide="bar-chart-3" class="text-teal"></i>
+          </div>
+          <div class="chart-container">
+            <canvas id="budget-comparison-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: BUDGETS -->
+      <section id="tab-budgets" class="mobile-tab-panel">
+        <div class="card budget-summary-card">
+          <div class="card-header">
+            <h3>Set Limits & Budgets</h3>
+            <button class="btn-text-action" onclick="openBudgetModal()">
+              <i data-lucide="settings" style="width: 16px; height: 16px;"></i> Edit Budgets
+            </button>
+          </div>
+          <p class="card-desc">Control your monthly limits for each category to save more.</p>
+          
+          <div class="budgets-progress-container" id="budgets-progress-list">
+            <!-- Dynamic progress bars here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: AI ADVISOR -->
+      <section id="tab-advisor" class="mobile-tab-panel">
+        <div class="ai-chat-card">
+          <div class="ai-advisor-header">
+            <div class="avatar-container">
+              <div class="ai-avatar">
+                <i data-lucide="bot"></i>
+              </div>
+              <div class="ai-status-glow"></div>
+            </div>
+            <div>
+              <h3>Wealth Advisor AI</h3>
+              <span class="ai-status">Analyzing June Expenses</span>
+            </div>
+          </div>
+
+          <!-- Chat messages area -->
+          <div class="ai-chat-messages" id="ai-chat-messages-container">
+            <div class="chat-message bot">
+              <p>Hello! I am your FinancePulse AI Assistant. I can analyze your logs, help you find where you spend the most, or recommend budgets to hit your savings rate. How can I help you today?</p>
+              <span class="message-time">Just Now</span>
+            </div>
+          </div>
+
+          <!-- Chat suggestion chips -->
+          <div class="chat-quick-queries">
+            <span class="query-chip" onclick="askAdvisor('Analyze my spending habits for this month')">"Analyze my spending"</span>
+            <span class="query-chip" onclick="askAdvisor('How can I save more money?')">"How to save more?"</span>
+            <span class="query-chip" onclick="askAdvisor('Am I going over any budgets?')">"Check budget warnings"</span>
+          </div>
+
+          <!-- Chat input footer -->
+          <div class="ai-chat-input-bar">
+            <input type="text" id="chat-user-input" placeholder="Ask AI financial advisor..." aria-label="Advisor Chat Input">
+            <button id="chat-send-btn" class="chat-send-btn" title="Send message to AI">
+              <i data-lucide="arrow-up"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar for Mobile-First layout -->
+    <nav class="mobile-bottom-nav">
+      <button class="nav-tabactive active" onclick="switchMobileTab('tab-dashboard', this)">
+        <i data-lucide="layout-grid"></i>
+        <span>Home</span>
+      </button>
+      <button class="nav-tabactive" onclick="switchMobileTab('tab-analytics', this)">
+        <i data-lucide="line-chart"></i>
+        <span>Charts</span>
+      </button>
+      
+      <!-- Floating Action Button (FAB) in the middle -->
+      <div class="fab-container">
+        <button class="fab-btn" onclick="openTransactionModal()" title="Add manual transaction">
+          <i data-lucide="plus"></i>
+        </button>
+      </div>
+
+      <button class="nav-tabactive" onclick="switchMobileTab('tab-budgets', this)">
+        <i data-lucide="target"></i>
+        <span>Budgets</span>
+      </button>
+      <button class="nav-tabactive" onclick="switchMobileTab('tab-advisor', this)">
+        <i data-lucide="brain-circuit"></i>
+        <span>AI Advisor</span>
+      </button>
+    </nav>
+
+  </div> <!-- End App Wrapper -->
+
+  <!-- MODAL: ADD/EDIT TRANSACTION -->
+  <div class="modal-overlay" id="transaction-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title-text">Add Transaction</h3>
+        <button class="modal-close-btn" onclick="closeTransactionModal()">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="transaction-form" onsubmit="saveTransaction(event)">
+          <input type="hidden" id="edit-id">
+          
+          <div class="form-group">
+            <label>Type</label>
+            <div class="type-toggle-container">
+              <label class="type-option">
+                <input type="radio" name="tx-type" value="expense" checked onchange="toggleFormType()">
+                <span class="type-btn red"><i data-lucide="arrow-up-right"></i> Expense</span>
+              </label>
+              <label class="type-option">
+                <input type="radio" name="tx-type" value="income" onchange="toggleFormType()">
+                <span class="type-btn green"><i data-lucide="arrow-down-left"></i> Income</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-amount">Amount (₹)</label>
+            <input type="number" id="tx-amount" step="any" placeholder="0.00" required>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-category">Category</label>
+            <select id="tx-category" required>
+              <option value="Food">Food & Dining</option>
+              <option value="Rent">Rent & Housing</option>
+              <option value="Bills">Bills & Utilities</option>
+              <option value="Transport">Transport & Fuel</option>
+              <option value="Shopping">Shopping & Lifestyle</option>
+              <option value="Entertainment">Entertainment & Sports</option>
+              <option value="Salary">Salary & Income</option>
+              <option value="Other">Other Miscellaneous</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-desc">Description</label>
+            <input type="text" id="tx-desc" placeholder="e.g. Weekly Groceries, Gas refuel..." required>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-date">Date</label>
+            <input type="date" id="tx-date" required>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeTransactionModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Log</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT BUDGET LIMITS -->
+  <div class="modal-overlay" id="budget-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Category Budgets</h3>
+        <button class="modal-close-btn" onclick="closeBudgetModal()">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="budget-form" onsubmit="saveBudgets(event)">
+          <div class="budget-fields-list" id="budget-fields-list-container">
+            <!-- Dynamic fields load here -->
+          </div>
+          <div class="modal-footer" style="margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Budgets</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Registration & Core Initialization -->
+  <script src="ai-parser.js"></script>
+  <script src="app.js"></script>
+  
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then((reg) => console.log('Service Worker registered successfully. Scope:', reg.scope))
+          .catch((err) => console.error('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
